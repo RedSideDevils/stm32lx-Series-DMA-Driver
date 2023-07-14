@@ -36,10 +36,12 @@ void dma_deinit_rx_usart(DMA_Init_Struct_t *dma_s);
 
 void dma_init_tx_usart(DMA_Init_Struct_t *dma_s);
 void dma_deinit_tx_usart(DMA_Init_Struct_t *dma_s);
+
+void dma_recieve_every_byte_mode(DMA_Init_Struct_t *dma_s);
+void dma_recieve_every_string_mode(DMA_Init_Struct_t *dma_s);
 /* end */
 
 /* Private */
-
 uint8_t get_tc_flag(dma_handler_channel_index_t ch_idx)
 {
 	switch(ch_idx)
@@ -124,6 +126,7 @@ void disable_tx_dma_channel(DMA_Init_Struct_t *dma_s)
 }
 /* end */
 
+
 /* ### USAGE OF DMA RECEIVE ###
  * call dma_init_rx_usart
  * call test_dma_receive_data
@@ -162,6 +165,8 @@ void dma_deinit_rx_usart(DMA_Init_Struct_t *dma_s)
 
 dma_status_t dma_receive_data(DMA_Init_Struct_t *dma_s, uint8_t *buff, uint32_t size, uint32_t timeout)
 {
+	if(dma_s->w_mode != NORMAL_MODE) return DMA_STATUS_ERROR;
+
 	dma_init_rx_usart(dma_s);
 
 	dma_status_t status = DMA_STATUS_OK;
@@ -207,6 +212,110 @@ dma_status_t dma_receive_data(DMA_Init_Struct_t *dma_s, uint8_t *buff, uint32_t 
 	return status;
 }
 
+/* DMA RECEIVE MODES */
+void dma_recieve_every_byte_mode(DMA_Init_Struct_t *dma_s)
+{
+	dma_init_rx_usart(dma_s);
+
+	dma_s->dma_channel_rx->CCR |= DMA_CCR_CIRC;
+
+    disable_rx_dma_channel(dma_s);
+	reset_tc_flag(dma_s->ch_idx);
+
+	// Configure Buffers
+	dma_s->dma_channel_rx->CMAR = (uint32_t)dma_s->dma_local_buffer[0];
+	dma_s->dma_channel_rx->CNDTR = 1;
+
+	enable_rx_dma_channel(dma_s);
+
+	// Enable transmit complete interrupt
+	dma_s->dma_channel_rx->CCR |= DMA_CCR_TCIE;
+
+	// Enable USART receive mode
+	dma_s->usart->CR3 |= USART_CR3_DMAR;
+}
+
+
+void dma_recieve_every_string_mode(DMA_Init_Struct_t *dma_s)
+{
+	dma_init_rx_usart(dma_s);
+
+	dma_s->dma_channel_rx->CCR |= DMA_CCR_CIRC;
+
+    disable_rx_dma_channel(dma_s);
+	reset_tc_flag(dma_s->ch_idx);
+
+	// Configure Buffers
+	dma_s->dma_local_buffer_ptr = 0;
+	dma_s->dma_channel_rx->CMAR = (uint32_t)&dma_s->dma_local_buffer[dma_s->dma_local_buffer_ptr];
+	dma_s->dma_channel_rx->CNDTR = 1;
+
+	enable_rx_dma_channel(dma_s);
+
+	// Enable transmit complete interrupt
+	dma_s->dma_channel_rx->CCR |= DMA_CCR_TCIE;
+
+	// Enable USART receive mode
+	dma_s->usart->CR3 |= USART_CR3_DMAR;
+}
+
+void dma_config_recieve_mode(DMA_Init_Struct_t *dma_s, dma_working_modes_t w_mode)
+{
+	switch(w_mode)
+	{
+	case NORMAL_MODE:
+		dma_deinit_rx_usart(dma_s);
+		dma_s->w_mode = w_mode;
+		break;
+
+	case INTERRUPT_EVERY_BYTE_STRING:
+		dma_s->w_mode = w_mode;
+		memset(dma_s->dma_local_buffer, 0, 256);
+		dma_recieve_every_string_mode(dma_s);
+		break;
+
+	default:
+		break;
+	}
+}
+
+
+void dma_config_delimeter(DMA_Init_Struct_t *dma_s, char delimeter)
+{
+	dma_s->delimeter = delimeter;
+}
+
+
+void dma_receive_loop(DMA_Init_Struct_t *dma_s)
+{
+	if(dma_s->w_mode == NORMAL_MODE) return;
+	else if(dma_s->w_mode == INTERRUPT_EVERY_BYTE_STRING)
+	{
+		if(get_tc_flag(dma_s->ch_idx) == 1)
+		{
+			reset_tc_flag(dma_s->ch_idx);
+
+			uint8_t last_element = dma_s->dma_local_buffer[dma_s->dma_local_buffer_ptr];
+
+			if(last_element == dma_s->delimeter)
+			{
+				dma_s->dma_local_buffer[dma_s->dma_local_buffer_ptr] = '\0';
+				dma_s->dma_local_buffer_ptr = 0;
+				dma_proccess_string_callback(dma_s, (char *)dma_s->dma_local_buffer);
+			}
+			else
+			{
+				// Change buffer address
+				dma_s->dma_local_buffer_ptr++;
+			}
+
+			dma_s->dma_channel_rx->CMAR = (uint32_t)&dma_s->dma_local_buffer[dma_s->dma_local_buffer_ptr];
+			dma_proccess_byte_callback(dma_s, dma_s->dma_local_buffer[0]);
+		}
+	}
+}
+
+
 /* ### USAGE OF DMA TRANSMIT ###
  * call dma_init_tx_usart
  * call dma_transmit_data
@@ -220,7 +329,7 @@ void dma_init_tx_usart(DMA_Init_Struct_t *dma_s)
 
     // Configure USART
     // Enable transmitter
-    dma_s->usart->CR1 = USART_CR1_TE;
+    dma_s->usart->CR1 |= USART_CR1_TE;
 
     // Configure DMA Channel (USART)
     dma_s->dma_channel_tx->CCR = DMA_CCR_MINC | DMA_CCR_DIR; // Enable memory increment mode and set direction to memory-to-peripheral
@@ -420,10 +529,8 @@ void dma_channel_handler(DMA_TypeDef *dma, dma_handler_channel_index_t ch_idx)
 	}
 }
 
-/* TEST */
-
-/* END */
-
 __weak void dma_half_transmit_callback(dma_handler_channel_index_t ch_idx);
 __weak void dma_complete_transmit_callback(dma_handler_channel_index_t ch_idx);
+__weak void dma_proccess_byte_callback(DMA_Init_Struct_t *dma_s,char byte);
+__weak void dma_proccess_string_callback(DMA_Init_Struct_t *dma_s, char *string);
 
