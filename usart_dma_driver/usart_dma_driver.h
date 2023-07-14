@@ -9,7 +9,6 @@
 #define MYMAIN_LIB_USART_DMA_DRIVER_USART_DMA_DRIVER_H_
 
 #include "main.h"
-#include "usart_dma_driver_config.h"
 #include "string.h"
 
 
