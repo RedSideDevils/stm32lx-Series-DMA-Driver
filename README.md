@@ -1,5 +1,5 @@
 # STM32 DMA Driver
-Made by Trippingcarpet 
+Made by **Trippingcarpet** 
 ## Installation
 Driver Download
 ``` sh
@@ -9,6 +9,7 @@ Driver Download
 4. add dma_channel_handler(DMA, DMA_CHANNEL_IDX) functon to irqn handler.
 ```
 ## Usage Example
+**main.c**
 ```c
 #include "usart_dma_driver.h"
 
@@ -40,3 +41,18 @@ void myMain(void)
 
 	while(1);
 }
+```
+**stm32l0xx_it.c**
+```c
+void DMA1_Channel4_5_6_7_IRQHandler(void)
+{
+  /* USER CODE BEGIN DMA1_Channel4_5_6_7_IRQn 0 */
+  /* USER CODE END DMA1_Channel4_5_6_7_IRQn 0 */
+
+  /* USER CODE BEGIN DMA1_Channel4_5_6_7_IRQn 1 */
+	dma_channel_handler(DMA1, DMA_CHANNEL_4);
+	dma_channel_handler(DMA1, DMA_CHANNEL_5);
+
+  /* USER CODE END DMA1_Channel4_5_6_7_IRQn 1 */
+}
+```
