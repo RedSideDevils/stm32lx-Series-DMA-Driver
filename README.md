@@ -11,9 +11,22 @@ Driver Download
 ## Usage Example
 **main.c**
 ```c
-#include "usart_dma_driver.h"
+#include "myMain.h"
 
 uint8_t loc_buff[256] = {0};
+uint8_t new_string_flag;
+
+void dma_proccess_byte_callback(DMA_Init_Struct_t *dma_s,char byte)
+{
+
+}
+
+void dma_proccess_string_callback(DMA_Init_Struct_t *dma_s, char *string)
+{
+	new_string_flag = 1;
+	strcpy((char *)loc_buff, string);
+}
+
 
 void myMain(void)
 {
@@ -33,13 +46,21 @@ void myMain(void)
 			.dma_irqn_handler = DMA1_Channel4_5_6_7_IRQn};
 
 
-	dma_receive_data(&dmaRecv, loc_buff, 5, 20000);
-	dma_transmit_data(&dmaSend, loc_buff, 5, 1000);
+	dma_config_recieve_mode(&dmaRecv, INTERRUPT_EVERY_BYTE_STRING);
+	dma_config_delimeter(&dmaRecv, '\n');
 
-	dma_receive_data(&dmaRecv, loc_buff, 5, 20000);
-	dma_transmit_data(&dmaSend, loc_buff, 5, 1000);
+	uint32_t d_size = 0;
 
-	while(1);
+	while(1)
+	{
+		if(new_string_flag == 1)
+		{
+			new_string_flag = 0;
+			d_size = strlen((char *)loc_buff);
+			dma_transmit_data(&dmaSend, loc_buff, d_size, 1000);
+		}
+		dma_receive_loop(&dmaRecv);
+	}
 }
 ```
 **stm32l0xx_it.c**
