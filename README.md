@@ -5,8 +5,8 @@ Made by **Trippingcarpet**
 
 ## Features
 - Compatible with all **STM32F7** series.
-- Fast solution for your STM projects
-- Easy integrate
+- Fast solution for your STM projects.
+- Easy integrate.
 
 ## Installation
 ``` sh
