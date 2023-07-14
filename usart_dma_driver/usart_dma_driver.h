@@ -44,11 +44,9 @@ typedef enum
 } dma_status_t;
 
 /* RECEIVE */
-
 dma_status_t dma_receive_data(DMA_Init_Struct_t *dma_s, uint8_t *buff, uint32_t size, uint32_t timeout);
 
 /* TRANSMIT */
-
 dma_status_t dma_transmit_data(DMA_Init_Struct_t *dma_s, const uint8_t *data, uint32_t data_size, uint32_t timeout);
 
 // ==== CALLBACKS ====
