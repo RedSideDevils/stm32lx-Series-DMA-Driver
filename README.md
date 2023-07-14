@@ -7,7 +7,7 @@ Made by **Trippingcarpet**
 - Compatible with all **STM32F7** series.
 - Fast solution for your STM projects
 - Easy integrate
-- 
+
 ## Installation
 ``` sh
 1. git clone git@github.com:RedSideDevils/dma_driver_for_stm32.git.
