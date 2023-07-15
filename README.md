@@ -60,7 +60,7 @@ void main(void)
 			.dma_irqn_handler = DMA1_Channel4_5_6_7_IRQn};
 
 
-	dma_config_recieve_mode(&dmaRecv, NORMAL_MODE);
+	dma_config_recieve_mode(&dmaRecv, INTERRUPT_EVERY_BYTE_STRING);
     dma_config_delimeter(dmaRecv, '\n');
     
 	uint32_t d_size = 0;
@@ -117,7 +117,7 @@ void main(void)
 			
     dma_config_recieve_mode(&dmaRecv, NORMAL_MODE);
     
-    dma_transmit_data(&dmaSend, (uint8_t *)Hello world, 11, 1000);
+    dma_transmit_data(&dmaSend, (uint8_t *)"Hello world", 11, 1000);
    
     // The incomming 2 bytes will store in loc_buff, if not data it will return with timeout
     dma_receive_data(&dmaRecv, loc_buff, 2, 1000);
