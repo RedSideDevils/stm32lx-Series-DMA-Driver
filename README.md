@@ -4,7 +4,7 @@ Made by **Trippingcarpet**
 [![Build Status](https://app.travis-ci.com/microsoft/DynamicProto-JS.svg?branch=master)](https://github.com/RedSideDevils/dma_driver_for_stm32/releases/tag/V1.0.0)
 
 ## Features
-- Compatible with all **STM32F7** series.
+- Compatible with all **STM32L0** series.
 - Fast solution for your STM projects.
 - Easy integrate.
 
